@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Cuisine & Country Roulette</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,800;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fffbeb',
+                            100: '#fef3c7',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309',
+                            800: '#92400e',
+                            terracotta: '#c85a32',
+                            sage: '#507255',
+                            saffron: '#e58e26',
+                            dark: '#0f172a',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        serif: ['"Playfair Display"', 'serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #0b0f19;
+            color: #f8fafc;
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(200, 90, 50, 0.15) 0px, transparent 50%),
+                radial-gradient(at 90% 90%, rgba(80, 114, 85, 0.15) 0px, transparent 50%),
+                radial-gradient(at 50% 50%, rgba(229, 142, 38, 0.08) 0px, transparent 60%);
+            background-attachment: fixed;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        .glass-panel {
+            background: rgba(20, 27, 45, 0.75);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.035);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.07);
+            border-color: rgba(245, 158, 11, 0.35);
+        }
+        .wheel-pointer {
+            filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.7));
+        }
+        .img-overlay-grad {
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.4) 50%, transparent 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased custom-scrollbar">
+
+    <header class="w-full glass-panel sticky top-0 z-40 border-b border-white/10 px-4 lg:px-8 py-3.5">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-terracotta via-amber-500 to-brand-saffron flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-orange-500/20">
+                    <i class="fa-solid fa-earth-americas"></i>
+                </div>
+                <div>
+                    <h1 class="font-serif font-bold text-xl lg:text-2xl bg-gradient-to-r from-amber-200 via-orange-300 to-amber-500 bg-clip-text text-transparent">
+                        Global Cuisine Roulette
+                    </h1>
+                    <p class="text-xs text-slate-400 hidden sm:block">Spin to discover 30+ authentic culinary destinations with photos</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button id="soundToggleBtn" onclick="toggleSound()" class="p-2.5 rounded-xl glass-card text-amber-400 hover:text-amber-300 transition" title="Toggle Sound">
+                    <i id="soundIcon" class="fa-solid fa-volume-high text-base"></i>
+                </button>
+                <button onclick="openModal('favoritesModal')" class="flex items-center space-x-2 px-3.5 py-2 rounded-xl glass-card text-amber-400 hover:bg-amber-400/10 transition">
+                    <i class="fa-solid fa-bookmark text-sm"></i>
+                    <span class="hidden sm:inline text-xs sm:text-sm font-semibold">Saved (<span id="favCount">0</span>)</span>
+                </button>
+                <button onclick="openModal('historyModal')" class="flex items-center space-x-2 px-3.5 py-2 rounded-xl glass-card text-slate-300 hover:bg-white/10 transition">
+                    <i class="fa-solid fa-history text-sm"></i>
+                    <span class="hidden sm:inline text-xs sm:text-sm font-semibold">History</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left Side: Interactive Wheel & Controls -->
+        <section class="lg:col-span-5 flex flex-col items-center space-y-5">
+            
+            <!-- Filters Toolbar -->
+            <div class="w-full glass-panel rounded-2xl p-4 space-y-3">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders"></i> Wheel Filters
+                    </span>
+                    <button onclick="resetFilters()" class="text-xs text-slate-400 hover:text-slate-200 underline">Reset All</button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">Region / Continent</label>
+                        <select id="regionFilter" onchange="applyFilters()" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+                            <option value="All">All Continents (30+)</option>
+                            <option value="Europe">Europe</option>
+                            <option value="Asia">Asia</option>
+                            <option value="Americas">Americas</option>
+                            <option value="Africa">Africa</option>
+                            <option value="Middle East">Middle East</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">Dietary Speciality</label>
+                        <select id="dietFilter" onchange="applyFilters()" class="w-full bg-slate-900/80 border border-white/10 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500">
+                            <option value="All">Any Specialty</option>
+                            <option value="VegFriendly">Vegetarian Friendly</option>
+                            <option value="Spicy">Famous for Spicy Food</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between pt-2 border-t border-white/5 text-xs text-slate-400">
+                    <span>Wheel Segments: <strong id="activeCount" class="text-amber-400">0</strong></span>
+                    <button onclick="openModal('customizeModal')" class="text-amber-400 font-semibold hover:underline flex items-center gap-1 text-xs">
+                        <i class="fa-solid fa-list-check"></i> Choose Countries
+                    </button>
+                </div>
+            </div>
+
+            <!-- Canvas Wheel Stage -->
+            <div class="relative w-full max-w-[380px] sm:max-w-[420px] aspect-square flex items-center justify-center p-2">
+                <div class="absolute inset-2 rounded-full bg-gradient-to-tr from-amber-500/20 to-orange-600/20 blur-xl"></div>
+                
+                <!-- Pointer -->
+                <div class="absolute top-0 z-20 -translate-y-2 flex flex-col items-center">
+                    <div class="wheel-pointer text-amber-400 text-3xl sm:text-4xl animate-bounce">
+                        <i class="fa-solid fa-location-pin"></i>
+                    </div>
+                </div>
+
+                <!-- Canvas Element -->
+                <canvas id="rouletteCanvas" class="relative z-10 w-full h-full drop-shadow-2xl cursor-pointer rounded-full"></canvas>
+
+                <!-- Center Spin Trigger -->
+                <button id="centerSpinBtn" onclick="spinWheel()" class="absolute z-20 w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-red-600 text-slate-950 font-extrabold text-xs sm:text-sm shadow-2xl flex flex-col items-center justify-center border-4 border-slate-950 hover:scale-105 active:scale-95 transition-transform duration-200 group">
+                    <i class="fa-solid fa-arrows-spin text-lg sm:text-xl group-hover:rotate-180 transition-transform duration-500 mb-0.5"></i>
+                    <span>SPIN!</span>
+                </button>
+            </div>
+
+            <!-- Action Triggers -->
+            <div class="w-full flex gap-3">
+                <button onclick="spinWheel()" class="flex-1 py-3.5 px-6 rounded-xl font-extrabold text-slate-950 bg-gradient-to-r from-amber-400 via-amber-300 to-orange-400 hover:from-amber-300 hover:to-orange-300 shadow-lg shadow-amber-500/20 active:scale-[0.98] transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-play text-slate-950"></i> Spin The Wheel
+                </button>
+                <button onclick="quickRoll()" class="py-3.5 px-4 rounded-xl glass-card text-amber-400 hover:bg-white/10 transition flex items-center justify-center gap-2" title="Instant Random Selection">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span class="hidden sm:inline font-semibold text-xs sm:text-sm">Quick Pick</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Right Side: Dish Photography Gallery & Country Details -->
+        <section class="lg:col-span-7 flex flex-col h-full">
+            <div id="resultContainer" class="w-full glass-panel rounded-3xl p-5 sm:p-7 flex flex-col justify-between min-h-[580px] border border-white/10 shadow-2xl transition-all duration-300">
+                
+                <!-- Initial Empty / Welcome State -->
+                <div id="welcomeState" class="my-auto text-center space-y-4 py-16">
+                    <div class="w-20 h-20 mx-auto rounded-2xl bg-slate-900 border border-amber-500/30 flex items-center justify-center text-amber-400 text-3xl mb-4 shadow-inner">
+                        <i class="fa-solid fa-utensils animate-pulse"></i>
+                    </div>
+                    <h2 class="font-serif text-2xl sm:text-3xl text-slate-100 font-bold">Spin to Explore World Cuisines</h2>
+                    <p class="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
+                        Tap <strong class="text-amber-400">SPIN</strong> to discover 30+ countries, complete with vibrant food photography, authentic dish breakdowns, key ingredients, recipes, and local dining lookup.
+                    </p>
+                </div>
+
+                <!-- Active Landed Country Card -->
+                <div id="resultCard" class="hidden space-y-6">
+                    
+                    <!-- Country Header & Flag -->
+                    <div class="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 pb-5">
+                        <div class="flex items-center space-x-4">
+                            <span id="countryFlag" class="text-5xl sm:text-6xl drop-shadow-md"></span>
+                            <div>
+                                <div class="flex items-center gap-3">
+                                    <h2 id="countryName" class="font-serif text-2xl sm:text-4xl font-extrabold text-white"></h2>
+                                    <button id="favToggleBtn" onclick="toggleFavoriteCurrent()" class="text-slate-500 hover:text-amber-400 text-2xl transition">
+                                        <i class="fa-regular fa-star"></i>
+                                    </button>
+                                </div>
+                                <p id="countryMeta" class="text-xs sm:text-sm text-amber-400/90 font-semibold mt-0.5"></p>
+                            </div>
+                        </div>
+
+                        <!-- External Action Links -->
+                        <div class="flex items-center gap-2">
+                            <a id="mapsLink" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl glass-card text-xs text-slate-200 hover:text-amber-400 hover:border-amber-400/50 transition flex items-center gap-2">
+                                <i class="fa-solid fa-map-location-dot text-amber-500 text-sm"></i> Local Restaurants
+                            </a>
+                            <a id="recipeSearchLink" target="_blank" rel="noopener noreferrer" class="px-3 py-2 rounded-xl glass-card text-xs text-slate-200 hover:text-amber-400 hover:border-amber-400/50 transition flex items-center gap-2">
+                                <i class="fa-solid fa-book-open text-orange-500 text-sm"></i> Google Recipes
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Cultural Notes -->
+                    <p id="countryDesc" class="text-xs sm:text-sm text-slate-300 leading-relaxed italic bg-slate-900/60 p-3.5 rounded-xl border border-white/5"></p>
+
+                    <!-- Famous Cuisines Photo Gallery -->
+                    <div>
+                        <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-3 flex items-center gap-2">
+                            <i class="fa-solid fa-camera-retro"></i> Signature Dishes & Food Photography
+                        </h3>
+                        <div id="dishesList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <!-- Injected dynamically with photo cards -->
+                        </div>
+                    </div>
+
+                    <!-- Street Food & Dessert Banner -->
+                    <div class="bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-transparent p-4 rounded-2xl border border-amber-500/20 flex items-start gap-3">
+                        <div class="p-2.5 bg-amber-500/20 text-amber-400 rounded-xl text-xl">
+                            <i class="fa-solid fa-store"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-bold uppercase text-amber-300">Iconic Street Food & Snacks</h4>
+                            <p id="streetFoodText" class="text-xs sm:text-sm text-slate-200 mt-0.5 leading-snug"></p>
+                        </div>
+                    </div>
+
+                    <!-- Footer Re-Spin Helper -->
+                    <div class="pt-2 flex justify-between items-center text-xs text-slate-400">
+                        <span>Want a different flavor?</span>
+                        <button onclick="spinWheel()" class="text-amber-400 font-bold hover:underline flex items-center gap-1.5">
+                            Spin Again <i class="fa-solid fa-rotate-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Favorites Modal -->
+    <div id="favoritesModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[80vh] flex flex-col border border-white/10">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 class="font-serif text-xl font-bold text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-bookmark"></i> Saved Cuisines
+                </h3>
+                <button onclick="closeModal('favoritesModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="favListContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                <!-- Dynamically injected -->
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div id="historyModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[80vh] flex flex-col border border-white/10">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 class="font-serif text-xl font-bold text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Spin History
+                </h3>
+                <button onclick="clearHistory()" class="text-xs text-slate-400 hover:text-red-400 underline">Clear History</button>
+                <button onclick="closeModal('historyModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            <div id="historyListContainer" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                <!-- Dynamically injected -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Customization Modal -->
+    <div id="customizeModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-2xl rounded-2xl p-6 space-y-4 max-h-[85vh] flex flex-col border border-white/10">
+            <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                <h3 class="font-serif text-xl font-bold text-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> Toggle Wheel Countries (30+)
+                </h3>
+                <button onclick="closeModal('customizeModal')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <p class="text-xs text-slate-300">Select which countries you want included in your roulette spins.</p>
+
+            <div id="customCountriesList" class="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                <!-- Dynamically injected checkboxes -->
+            </div>
+
+            <div class="pt-3 border-t border-white/10 flex justify-end gap-2">
+                <button onclick="selectAllCountries(true)" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 text-slate-200 hover:bg-slate-700">Select All</button>
+                <button onclick="selectAllCountries(false)" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 text-slate-200 hover:bg-slate-700">Deselect All</button>
+                <button onclick="closeModal('customizeModal')" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-amber-500 text-slate-950 hover:bg-amber-400">Save & Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const COUNTRY_DATA = [
+            {
+                id: 'italy',
+                name: 'Italy',
+                flag: '🇮🇹',
+                capital: 'Rome',
+                region: 'Europe',
+                color: '#c85a32',
+                tags: ['VegFriendly'],
+                description: 'World-renowned for artisanal pasta, wood-fired pizzas, extra virgin olive oil, and regional cured meats.',
+                dishes: [
+                    { name: 'Neapolitan Pizza', localName: 'Pizza Margherita', desc: 'San Marzano tomato sauce, fresh buffalo mozzarella, fragrant basil, and olive oil.', tags: ['Vegetarian'], ingredients: 'Flour, Mozzarella, Tomatoes, Basil', img: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Tagliatelle al Ragù', desc: 'Slow-cooked Bolognese meat sauce tossed with fresh egg pasta ribbons.', tags: ['Classic'], ingredients: 'Beef, Pork, Wine, Egg Pasta', img: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Saffron Risotto', localName: 'Risotto alla Milanese', desc: 'Creamy Arborio rice infused with vibrant saffron threads and Parmigiano-Reggiano.', tags: ['Gluten-Free'], ingredients: 'Arborio Rice, Saffron, Parmesan, Wine', img: 'https://images.unsplash.com/photo-1633964913295-ceb43826e7c9?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Arancini (Fried stuffed rice balls) & Sicilian Cannoli'
+            },
+            {
+                id: 'japan',
+                name: 'Japan',
+                flag: '🇯🇵',
+                capital: 'Tokyo',
+                region: 'Asia',
+                color: '#2a6f97',
+                tags: [],
+                description: 'Celebrated for umami perfection, fresh seasonal sashimi, rich broths, and tempura frying.',
+                dishes: [
+                    { name: 'Tonkotsu Ramen', desc: 'Rich 12-hour pork bone broth served with springy noodles, chashu pork, and soft egg.', tags: ['Popular'], ingredients: 'Pork Bone Broth, Ramen Noodles, Chashu', img: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Nigiri Sushi Selection', desc: 'Hand-pressed vinegared rice topped with fresh salmon, tuna, and yellowtail.', tags: ['Gluten-Free'], ingredients: 'Sushi Rice, Fresh Fish, Wasabi', img: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Crispy Vegetable Tempura', desc: 'Light and airy fried seasonal vegetables served with warm dashi dipping sauce.', tags: ['Vegetarian'], ingredients: 'Sweet Potato, Lotus Root, Tempura Batter', img: 'https://images.unsplash.com/photo-1615361200141-f45040f367be?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Takoyaki (Octopus balls) & Yakitori chicken skewers'
+            },
+            {
+                id: 'mexico',
+                name: 'Mexico',
+                flag: '🇲🇽',
+                capital: 'Mexico City',
+                region: 'Americas',
+                color: '#e58e26',
+                tags: ['Spicy', 'VegFriendly'],
+                description: 'Vibrant spices, slow-marinated meats, complex moles, and heirloom corn tortillas.',
+                dishes: [
+                    { name: 'Tacos al Pastor', desc: 'Pineapple-marinated pork roasted on a vertical spit served on warm corn tortillas.', tags: ['Gluten-Free'], ingredients: 'Pork, Achiote, Pineapple, Cilantro', img: 'https://images.unsplash.com/photo-1551504734-5ee1c4a1479b?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Mole Poblano', desc: 'Rich savory sauce made from 20+ ingredients including chilis and dark cocoa over chicken.', tags: ['Spicy'], ingredients: 'Dried Chilis, Chocolate, Spices, Chicken', img: 'https://images.unsplash.com/photo-1599974579688-8dbdd335c77f?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Chiles Rellenos', desc: 'Roasted poblano peppers stuffed with melted Oaxaca cheese and fried in batter.', tags: ['Vegetarian'], ingredients: 'Poblano Chilis, Cheese, Tomato Salsa', img: 'https://images.unsplash.com/photo-1615870216519-2f9fa575fa5c?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Elote (Grilled street corn with Cotija cheese & chili) & Churros'
+            },
+            {
+                id: 'thailand',
+                name: 'Thailand',
+                flag: '🇹🇭',
+                capital: 'Bangkok',
+                region: 'Asia',
+                color: '#507255',
+                tags: ['Spicy', 'VegFriendly'],
+                description: 'A balance of four foundational tastes: sweet, sour, salty, and fiery heat.',
+                dishes: [
+                    { name: 'Tom Yum Goong', desc: 'Fiery lemongrass and galangal soup loaded with jumbo prawns and kaffir lime.', tags: ['Spicy', 'Gluten-Free'], ingredients: 'Shrimp, Lemongrass, Chilis, Lime', img: 'https://images.unsplash.com/photo-1548946526-f69e2424cf45?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Authentic Pad Thai', desc: 'Stir-fried rice noodles with tamarind sauce, crushed peanuts, sprouts, and lime.', tags: ['Veg Option'], ingredients: 'Rice Noodles, Tamarind, Peanuts, Tofu', img: 'https://images.unsplash.com/photo-1559847844-5315695dadae?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Thai Green Curry', localName: 'Gaeng Keow Wan', desc: 'Fragrant coconut milk curry packed with green chilis, Thai basil, and chicken.', tags: ['Spicy', 'Gluten-Free'], ingredients: 'Coconut Milk, Green Curry Paste, Basil', img: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Mango Sticky Rice & Grilled Pork Skewers (Moo Ping)'
+            },
+            {
+                id: 'india',
+                name: 'India',
+                flag: '🇮🇳',
+                capital: 'New Delhi',
+                region: 'Asia',
+                color: '#b45309',
+                tags: ['Spicy', 'VegFriendly'],
+                description: 'An explosion of aromatic spices, slow-cooked gravies, regional curries, and tandoori flatbreads.',
+                dishes: [
+                    { name: 'Butter Chicken', localName: 'Murgh Makhani', desc: 'Tender tandoori chicken cooked in a rich, velvet tomato and butter gravy.', tags: ['Halal', 'Gluten-Free'], ingredients: 'Chicken, Tomatoes, Butter, Garam Masala', img: 'https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Paneer Tikka Masala', desc: 'Marinated cottage cheese cubes roasted and simmered in a spiced tomato gravy.', tags: ['Vegetarian', 'Spicy'], ingredients: 'Paneer, Yogurt, Tomatoes, Spices', img: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Biryani Feast', desc: 'Fragrant Basmati rice layered with aromatic spices, caramelized onions, and saffron.', tags: ['Halal'], ingredients: 'Basmati Rice, Spices, Mint, Meat/Veg', img: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Pani Puri (Crispy filled puris with spiced water) & Crispy Samosas'
+            },
+            {
+                id: 'france',
+                name: 'France',
+                flag: '🇫🇷',
+                capital: 'Paris',
+                region: 'Europe',
+                color: '#3b82f6',
+                tags: ['VegFriendly'],
+                description: 'Classical culinary mastery, velvety butter sauces, artisanal cheeses, and patisserie pastry.',
+                dishes: [
+                    { name: 'Boeuf Bourguignon', desc: 'Red Burgundy wine braised beef stew with pearl onions, lardons, and mushrooms.', tags: ['Classic'], ingredients: 'Beef, Red Wine, Mushrooms, Herbs', img: 'https://images.unsplash.com/photo-1608039829572-78524f79c4c7?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Provençal Ratatouille', desc: 'Slow-simmered vegetable stew of eggplant, zucchini, peppers, garlic, and herbs.', tags: ['Vegan', 'Gluten-Free'], ingredients: 'Eggplant, Zucchini, Tomatoes, Garlic', img: 'https://images.unsplash.com/photo-1572453800999-e8d2d1589b7c?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'French Onion Soup', localName: 'Soupe à l’Oignon', desc: 'Caramelized onion broth topped with a toasted baguette slice and melted Gruyère.', tags: ['Vegetarian Option'], ingredients: 'Onions, Beef Broth, Baguette, Gruyère', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Crepes (Nutella & Banana) & Warm Butter Croissants'
+            },
+            {
+                id: 'spain',
+                name: 'Spain',
+                flag: '🇪🇸',
+                capital: 'Madrid',
+                region: 'Europe',
+                color: '#dc2626',
+                tags: ['VegFriendly'],
+                description: 'Saffron-scented rice dishes, tapas culture, cured jamón, and olive oil cooked seafood.',
+                dishes: [
+                    { name: 'Seafood Paella', localName: 'Paella de Mariscos', desc: 'Bomba rice cooked with saffron broth, mussels, prawns, calamari, and bell peppers.', tags: ['Gluten-Free'], ingredients: 'Bomba Rice, Saffron, Shrimp, Mussels', img: 'https://images.unsplash.com/photo-1534080564583-6be75777b70a?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Spanish Omelette', localName: 'Tortilla de Patatas', desc: 'Thick, comforting potato and egg omelette slow-cooked in olive oil.', tags: ['Vegetarian', 'Gluten-Free'], ingredients: 'Potatoes, Eggs, Onions, Olive Oil', img: 'https://images.unsplash.com/photo-1584269600464-37b1b58a9fe7?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Gambas al Ajillo', desc: 'Sizzling prawns cooked in extra virgin olive oil with sliced garlic and dried chilis.', tags: ['Gluten-Free'], ingredients: 'Prawns, Garlic, Olive Oil, Chili', img: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Churros con Chocolate & Patatas Bravas'
+            },
+            {
+                id: 'greece',
+                name: 'Greece',
+                flag: '🇬🇷',
+                capital: 'Athens',
+                region: 'Europe',
+                color: '#0284c7',
+                tags: ['VegFriendly'],
+                description: 'Sun-drenched Aegean ingredients, fresh feta, oregano, olives, grilled lamb, and gyros.',
+                dishes: [
+                    { name: 'Greek Moussaka', desc: 'Layered casserole of sliced eggplant, spiced minced lamb, and creamy béchamel.', tags: ['Classic'], ingredients: 'Eggplant, Lamb, Tomato Sauce, Béchamel', img: 'https://images.unsplash.com/photo-1633436375153-d7045cb93e38?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Souvlaki Plate', desc: 'Grilled marinated pork or chicken skewers served with tzatziki sauce and pita.', tags: ['Popular'], ingredients: 'Pork/Chicken, Garlic, Yogurt, Pita', img: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Spanakopita', desc: 'Crispy phyllo pastry filled with spinach, feta cheese, and Mediterranean herbs.', tags: ['Vegetarian'], ingredients: 'Phyllo Dough, Spinach, Feta, Dill', img: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Gyros Wrapped in Warm Pita & Loukoumades (Honey puffs)'
+            },
+            {
+                id: 'vietnam',
+                name: 'Vietnam',
+                flag: '🇻🇳',
+                capital: 'Hanoi',
+                region: 'Asia',
+                color: '#059669',
+                tags: ['VegFriendly'],
+                description: 'Fresh aromatic herbs, crispy baguettes, light rice noodles, and rich bone broths.',
+                dishes: [
+                    { name: 'Pho Bo', desc: 'Aromatic beef bone broth with rice noodles, sliced beef tenderloin, basil, and sprouts.', tags: ['Gluten-Free'], ingredients: 'Beef Broth, Rice Noodles, Herbs, Beef', img: 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Banh Mi Sandwich', desc: 'Crispy French baguette filled with savory pork, pate, pickled carrots, and cilantro.', tags: ['Popular'], ingredients: 'Baguette, Pork, Pickle, Cilantro', img: 'https://images.unsplash.com/photo-1626804475297-41608ea09aeb?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Fresh Spring Rolls', localName: 'Goi Cuon', desc: 'Translucent rice paper wraps filled with shrimp, pork, fresh herbs, and rice vermicelli.', tags: ['Gluten-Free'], ingredients: 'Rice Paper, Shrimp, Herbs, Peanut Dip', img: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Vietnamese Iced Coffee (Ca Phe Sua Da) & Banh Xeo'
+            },
+            {
+                id: 'brazil',
+                name: 'Brazil',
+                flag: '🇧🇷',
+                capital: 'Brasília',
+                region: 'Americas',
+                color: '#16a34a',
+                tags: [],
+                description: 'Rodizio churrasco barbecues, black bean stews, tropical cassava roots, and açai.',
+                dishes: [
+                    { name: 'Feijoada Stew', desc: 'Slow-simmered black bean stew loaded with salted pork, smoked sausage, and beef.', tags: ['National Dish'], ingredients: 'Black Beans, Pork, Sausage, Rice', img: 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Picanha Steak', desc: 'Juicy sirloin cap grilled over open flames with coarse sea salt.', tags: ['Gluten-Free'], ingredients: 'Beef Sirloin Cap, Sea Salt', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Cheese Bread', localName: 'Pão de Queijo', desc: 'Chewy baked cassava flour bread rolls baked with shredded cheese.', tags: ['Vegetarian', 'Gluten-Free'], ingredients: 'Tapioca Flour, Cheese, Eggs, Milk', img: 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Coxinha (Crispy chicken croquettes) & Pastel de Feira'
+            },
+            {
+                id: 'ethiopia',
+                name: 'Ethiopia',
+                flag: '🇪🇹',
+                capital: 'Addis Ababa',
+                region: 'Africa',
+                color: '#10b981',
+                tags: ['Spicy', 'VegFriendly'],
+                description: 'Communal dining served atop spongy teff-flour Injera flatbread with spiced wot stews.',
+                dishes: [
+                    { name: 'Doro Wat', desc: 'Spicy chicken stew slow-cooked with berbere chili blend and hard-boiled eggs.', tags: ['Spicy'], ingredients: 'Chicken, Berbere, Spiced Butter, Eggs', img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Misir Wot', desc: 'Savory red lentils cooked with garlic, ginger, and berbere spices.', tags: ['Vegan', 'Spicy'], ingredients: 'Red Lentils, Berbere, Garlic, Onion', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Injera Combination Platter', desc: 'Assorted vegetable and meat stews served over fermented teff flatbread.', tags: ['Veg Option'], ingredients: 'Teff Flour, Lentils, Vegetables, Meat', img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Katenna (Injera toasted with berbere & spiced butter)'
+            },
+            {
+                id: 'morocco',
+                name: 'Morocco',
+                flag: '🇲🇦',
+                capital: 'Rabat',
+                region: 'Africa',
+                color: '#ea580c',
+                tags: ['VegFriendly'],
+                description: 'Aromatic earthenware tagines combining slow-cooked meats with dried fruits and saffron couscous.',
+                dishes: [
+                    { name: 'Lamb Tagine with Prunes', desc: 'Tender slow-cooked lamb stewed with honey, almonds, cinnamon, and prunes.', tags: ['Gluten-Free'], ingredients: 'Lamb, Prunes, Honey, Cinnamon', img: 'https://images.unsplash.com/photo-1541518763669-27fef04b14da?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Seven Vegetable Couscous', desc: 'Fluffy steamed semolina couscous topped with a rich vegetable stew.', tags: ['Vegetarian'], ingredients: 'Couscous, Zucchini, Carrots, Chickpeas', img: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Chicken Pastilla', desc: 'Crispy phyllo pie filled with spiced chicken, roasted almonds, and powdered sugar.', tags: ['Classic'], ingredients: 'Phyllo, Chicken, Almonds, Cinnamon', img: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Msemen (Flaky layered flatbread) & Fresh Mint Tea'
+            },
+            {
+                id: 'korea',
+                name: 'South Korea',
+                flag: '🇰🇷',
+                capital: 'Seoul',
+                region: 'Asia',
+                color: '#7c3aed',
+                tags: ['Spicy'],
+                description: 'Tabletop barbecues, fermented probiotics like Kimchi, spicy gochujang, and comforting rice bowls.',
+                dishes: [
+                    { name: 'Korean BBQ Beef', localName: 'Bulgogi', desc: 'Thinly sliced soy-marinated beef grilled with garlic, sesame oil, and onions.', tags: ['Popular'], ingredients: 'Beef, Soy Sauce, Sesame, Pear', img: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Stone Bowl Bibimbap', desc: 'Hot rice bowl topped with seasoned vegetables, fried egg, and gochujang sauce.', tags: ['Veg Option', 'Spicy'], ingredients: 'Rice, Vegetables, Gochujang, Egg', img: 'https://images.unsplash.com/photo-1553163147-622ab57be1c7?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Korean Fried Chicken', desc: 'Ultra-crispy double-fried chicken coated in sweet and spicy garlic glaze.', tags: ['Spicy'], ingredients: 'Chicken, Gochujang, Honey, Garlic', img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Tteokbokki (Spicy chewy rice cakes) & Hotteok (Sweet cinnamon pancakes)'
+            },
+            {
+                id: 'jamaica',
+                name: 'Jamaica',
+                flag: '🇯🇲',
+                capital: 'Kingston',
+                region: 'Americas',
+                color: '#65a30d',
+                tags: ['Spicy'],
+                description: 'Fiery jerk seasoning, pimento wood smoke, coconut rice, and savory meat patties.',
+                dishes: [
+                    { name: 'Authentic Jerk Chicken', desc: 'Chicken marinated in Scotch bonnet chilis and pimento, smoked over wood.', tags: ['Spicy', 'Gluten-Free'], ingredients: 'Chicken, Scotch Bonnet, Allspice, Thyme', img: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Ackee and Saltfish', desc: 'Sautéed salted codfish cooked with ackee fruit, peppers, and onions.', tags: ['National Dish'], ingredients: 'Salt Cod, Ackee, Bell Peppers, Thyme', img: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Jamaican Curried Goat', desc: 'Tender goat meat slow-simmered in aromatic Jamaican curry powder and potatoes.', tags: ['Spicy'], ingredients: 'Goat Meat, Curry Powder, Potatoes', img: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Jamaican Beef Patties & Festival Fried Dough'
+            },
+            {
+                id: 'peru',
+                name: 'Peru',
+                flag: '🇵🇪',
+                capital: 'Lima',
+                region: 'Americas',
+                color: '#e11d48',
+                tags: ['Spicy'],
+                description: 'Fresh seafood ceviches, Andean tubers, and Chifa (Chinese-Peruvian) fusion wok cooking.',
+                dishes: [
+                    { name: 'Classic Peruvian Ceviche', desc: 'Fresh raw sea bass cured in citrus lime juice with red onion and spicy Ají Limo.', tags: ['Gluten-Free', 'Spicy'], ingredients: 'Raw Sea Bass, Lime Juice, Red Onion, Chilis', img: 'https://images.unsplash.com/photo-1535399831218-d5bd36d1a6b3?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Lomo Saltado', desc: 'High-heat wok stir-fry of beef tenderloin, tomatoes, red onions, soy sauce, and french fries.', tags: ['Fusion'], ingredients: 'Beef Tenderloin, Soy Sauce, French Fries', img: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Causa Rellena', desc: 'Layered yellow potato terrine seasoned with Ají Amarillo lime pepper and chicken salad.', tags: ['Gluten-Free'], ingredients: 'Yellow Potatoes, Ají Amarillo, Chicken, Avocado', img: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Anticuchos (Marinated beef heart skewers) & Pisco Sour'
+            },
+            {
+                id: 'turkey',
+                name: 'Turkey',
+                flag: '🇹🇷',
+                capital: 'Ankara',
+                region: 'Middle East',
+                color: '#b91c1c',
+                tags: ['VegFriendly'],
+                description: 'Succulent kebabs, wood-baked flatbreads, eggplant mezze spreads, and sweet baklava.',
+                dishes: [
+                    { name: 'Iskender Kebab', desc: 'Thinly sliced lamb doner meat served over warm pita bread with tomato sauce and brown butter.', tags: ['Popular'], ingredients: 'Lamb Doner, Pita Bread, Tomato Sauce, Yogurt', img: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Turkish Flatbread', localName: 'Pide', desc: 'Boat-shaped wood-fired flatbread topped with minced beef, feta cheese, and spinach.', tags: ['Veg Option'], ingredients: 'Dough, Minced Meat, Cheese, Spinach', img: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Baklava Dessert', desc: 'Layers of crispy, flaky phyllo dough filled with crushed pistachios and honey syrup.', tags: ['Vegetarian'], ingredients: 'Phyllo, Pistachios, Butter, Honey Syrup', img: 'https://images.unsplash.com/photo-1519676867240-f03562e64548?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Simit (Sesame bread rings) & Döner Sandwich'
+            },
+            {
+                id: 'lebanon',
+                name: 'Lebanon',
+                flag: '🇱🇧',
+                capital: 'Beirut',
+                region: 'Middle East',
+                color: '#15803d',
+                tags: ['VegFriendly'],
+                description: 'Healthy Levantine cuisine rich in olive oil, fresh parsley, chickpeas, garlic, and grilled meats.',
+                dishes: [
+                    { name: 'Mezze Platter & Hummus', desc: 'Creamy chickpea hummus served with warm pita, falafel, tabbouleh, and grape leaves.', tags: ['Vegan', 'Healthy'], ingredients: 'Chickpeas, Tahini, Garlic, Olive Oil', img: 'https://images.unsplash.com/photo-1541518763669-27fef04b14da?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Chicken Shawarma Wrap', desc: 'Spiced slow-roasted chicken shaved into pita bread with toum garlic sauce and pickles.', tags: ['Halal'], ingredients: 'Chicken, Garlic Toum, Pickles, Pita', img: 'https://images.unsplash.com/photo-1561651823-34feb02250e4?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Kibbeh Balls', desc: 'Crispy bulgur wheat shells stuffed with spiced minced lamb, pine nuts, and onions.', tags: ['Classic'], ingredients: 'Bulgur Wheat, Lamb, Pine Nuts, Spices', img: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Crispy Falafel Pita Sandwiches & Manakish Za’atar'
+            },
+            {
+                id: 'argentina',
+                name: 'Argentina',
+                flag: '🇦🇷',
+                capital: 'Buenos Aires',
+                region: 'Americas',
+                color: '#0284c7',
+                tags: [],
+                description: 'Grass-fed Asado wood-fired barbecues, herbal Chimichurri, empanadas, and alfajores.',
+                dishes: [
+                    { name: 'Asado BBQ Ribs', desc: 'Slow-grilled beef ribs roasted over open embers served with fresh Chimichurri sauce.', tags: ['Gluten-Free'], ingredients: 'Beef Ribs, Parsley, Garlic, Vinegar, Olive Oil', img: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Argentine Empanadas', desc: 'Flaky baked pastry pockets stuffed with hand-cut beef, green olives, and hard-boiled egg.', tags: ['Popular'], ingredients: 'Pastry, Beef, Onions, Olives', img: 'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Milanesa Napolitana', desc: 'Crispy breaded beef cutlet topped with ham, tomato sauce, and melted mozzarella cheese.', tags: ['Classic'], ingredients: 'Beef Cutlet, Tomato Sauce, Ham, Mozzarella', img: 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Choripán (Sausage sandwich with chimichurri) & Dulce de Leche Alfajores'
+            },
+            {
+                id: 'china',
+                name: 'China',
+                flag: '🇨🇳',
+                capital: 'Beijing',
+                region: 'Asia',
+                color: '#c2410c',
+                tags: ['Spicy', 'VegFriendly'],
+                description: 'Vast regional diversity ranging from fiery Sichuan peppercorns to delicate Cantonese Dim Sum.',
+                dishes: [
+                    { name: 'Peking Duck', desc: 'Crispy roasted duck served with thin pancakes, scallions, cucumbers, and sweet bean sauce.', tags: ['Iconic'], ingredients: 'Duck, Pancakes, Hoisin, Cucumber', img: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Mapo Tofu', desc: 'Silken tofu cooked in a spicy Sichuan chili bean paste with tongue-numbing peppercorns.', tags: ['Spicy', 'Veg Option'], ingredients: 'Silken Tofu, Sichuan Peppercorn, Chili Oil', img: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Steamed Dim Sum Baskets', localName: 'Xiao Long Bao', desc: 'Soup-filled steamed pork dumplings served with black vinegar and fresh ginger.', tags: ['Popular'], ingredients: 'Pork, Flour Wrapper, Savory Soup Broth', img: 'https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Jianbing (Crispy savory crepes) & Baozi Buns'
+            },
+            {
+                id: 'egypt',
+                name: 'Egypt',
+                flag: '🇪🇬',
+                capital: 'Cairo',
+                region: 'Africa',
+                color: '#d97706',
+                tags: ['VegFriendly'],
+                description: 'Ancient staple grains, fava bean purees, aromatic cumin, garlic, and caramelized onions.',
+                dishes: [
+                    { name: 'Kushari', desc: 'Egypt national comfort dish of rice, macaroni, lentils, chickpeas, topped with spicy tomato garlic sauce and crispy onions.', tags: ['Vegan'], ingredients: 'Rice, Pasta, Lentils, Chickpeas, Tomato Garlic Sauce', img: 'https://images.unsplash.com/photo-1585937421612-70a008356fbe?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Ful Medames', desc: 'Slow-cooked fava beans mashed with cumin, garlic, lemon juice, and olive oil.', tags: ['Vegan', 'Gluten-Free'], ingredients: 'Fava Beans, Cumin, Garlic, Olive Oil', img: 'https://images.unsplash.com/photo-1541518763669-27fef04b14da?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Molokhia Soup', desc: 'Nutritious green jute leaf broth cooked with garlic, coriander, and served over chicken or rice.', tags: ['Gluten-Free'], ingredients: 'Jute Leaves, Garlic Broth, Coriander', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Egyptian Ta’ameya (Fava bean falafel) & Hawawshi Meat Pies'
+            },
+            {
+                id: 'colombia',
+                name: 'Colombia',
+                flag: '🇨🇴',
+                capital: 'Bogotá',
+                region: 'Americas',
+                color: '#f59e0b',
+                tags: [],
+                description: 'Comforting corn Arepas, hearty soup stews, fried plantains, and world-class coffee.',
+                dishes: [
+                    { name: 'Bandeja Paisa', desc: 'Hearty platter of grilled steak, pork belly (chicharrón), rice, beans, fried egg, and plantain.', tags: ['Hearty'], ingredients: 'Beef, Pork Belly, Red Beans, Rice, Avocado', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Stuffed Arepas', desc: 'Thick grilled corn cakes stuffed with shredded beef, melted cheese, and guacamole.', tags: ['Gluten-Free', 'Veg Option'], ingredients: 'Cornmeal, Shredded Beef, Queso, Avocado', img: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Ajiaco Soup', desc: 'Rich chicken and potato soup cooked with corn on the cob and guascas herb, served with cream and capers.', tags: ['Gluten-Free'], ingredients: 'Chicken, Potatoes, Corn, Guascas', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Crispy Cheese Empanadas & Pandebono'
+            },
+            {
+                id: 'germany',
+                name: 'Germany',
+                flag: '🇩🇪',
+                capital: 'Berlin',
+                region: 'Europe',
+                color: '#475569',
+                tags: [],
+                description: 'Hearty sausages, crispy schnitzels, fermented sauerkraut, pretzels, and craft beers.',
+                dishes: [
+                    { name: 'Crispy Pork Schnitzel', desc: 'Tenderized pork cutlet breaded and fried to golden crispiness served with lemon and potato salad.', tags: ['Classic'], ingredients: 'Pork, Breadcrumbs, Eggs, Potato Salad', img: 'https://images.unsplash.com/photo-1599974579688-8dbdd335c77f?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Currywurst', desc: 'Sliced steamed pork sausage topped with warm curry-ketchup sauce and french fries.', tags: ['Popular'], ingredients: 'Sausage, Curry Ketchup, French Fries', img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Spatzle Cheese Pasta', localName: 'Kässpätzle', desc: 'Handmade egg noodles baked with melted Swiss Emmental cheese and crispy fried onions.', tags: ['Vegetarian'], ingredients: 'Egg Noodles, Cheese, Fried Onions', img: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Warm Bavarian Soft Pretzels & Doner Kebab'
+            },
+            {
+                id: 'portugal',
+                name: 'Portugal',
+                flag: '🇵🇹',
+                capital: 'Lisbon',
+                region: 'Europe',
+                color: '#047857',
+                tags: [],
+                description: 'Salt cod (Bacalhau) mastery, flame-grilled peri-peri chicken, and legendary custard tarts.',
+                dishes: [
+                    { name: 'Bacalhau à Brás', desc: 'Shredded salted cod sautéed with thin fried matchstick potatoes, eggs, and black olives.', tags: ['Classic'], ingredients: 'Salt Cod, Potatoes, Eggs, Olives', img: 'https://images.unsplash.com/photo-1534080564583-6be75777b70a?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Peri-Peri Chicken', localName: 'Frango Assado', desc: 'Flame-grilled butterflied chicken basted in spicy African Bird Eye chili sauce.', tags: ['Spicy', 'Gluten-Free'], ingredients: 'Chicken, Peri-Peri Chilis, Garlic', img: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Pastel de Nata', desc: 'Crispy puff pastry tart filled with rich, caramelized egg custard dusted with cinnamon.', tags: ['Vegetarian'], ingredients: 'Puff Pastry, Egg Custard, Cinnamon', img: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Bifana (Marinated pork sandwich) & Sardinhas Assadas'
+            },
+            {
+                id: 'georgia',
+                name: 'Georgia',
+                flag: '🇬🇪',
+                capital: 'Tbilisi',
+                region: 'Europe',
+                color: '#991b1b',
+                tags: ['VegFriendly'],
+                description: 'Famous molten cheese bread boats, gigantic soup dumplings, garlic walnut sauces, and wine.',
+                dishes: [
+                    { name: 'Khachapuri', localName: 'Adjaruli Khachapuri', desc: 'Boat-shaped fresh bread filled with molten cheese, butter, and runny egg yolk.', tags: ['Vegetarian', 'Iconic'], ingredients: 'Dough, Sulguni Cheese, Egg, Butter', img: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Khinkali Soup Dumplings', desc: 'Twisted dough dumplings stuffed with spiced beef and pork broth.', tags: ['Popular'], ingredients: 'Dough, Spiced Beef/Pork, Broth', img: 'https://images.unsplash.com/photo-1496116218417-1a781b1c416c?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Badrijani Nigvzit', desc: 'Fried eggplant rolls filled with garlic spiced walnut paste and pomegranate seeds.', tags: ['Vegan', 'Gluten-Free'], ingredients: 'Eggplant, Walnut Paste, Garlic, Pomegranate', img: 'https://images.unsplash.com/photo-1572453800999-e8d2d1589b7c?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Churchkhela (Walnut candle candy dipped in grape juice)'
+            },
+            {
+                id: 'iran',
+                name: 'Iran',
+                flag: '🇮🇷',
+                capital: 'Tehran',
+                region: 'Middle East',
+                color: '#16a34a',
+                tags: ['VegFriendly'],
+                description: 'Fragrant saffron rice, slow-cooked pomegranate stews, sumac, and succulent kebabs.',
+                dishes: [
+                    { name: 'Chelo Kebab Koobideh', desc: 'Saffron Basmati rice with grilled skewers of minced lamb seasoned with sumac and butter.', tags: ['Halal', 'Gluten-Free'], ingredients: 'Minced Lamb, Saffron Rice, Sumac, Butter', img: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Fesenjan Stew', desc: 'Rich sweet-and-sour stew made from crushed walnuts and pomegranate molasses over chicken.', tags: ['Gluten-Free'], ingredients: 'Walnuts, Pomegranate Molasses, Chicken', img: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Ghormeh Sabzi', desc: 'Aromatic herb stew cooked with kidney beans, dried limes, and tender lamb pieces.', tags: ['National Dish'], ingredients: 'Parsley, Cilantro, Fenugreek, Lamb, Dried Lime', img: 'https://images.unsplash.com/photo-1541518763669-27fef04b14da?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Iranian Saffron Ice Cream (Bastani) & Sangak Flatbread'
+            },
+            {
+                id: 'philippines',
+                name: 'Philippines',
+                flag: '🇵🇭',
+                capital: 'Manila',
+                region: 'Asia',
+                color: '#2563eb',
+                tags: [],
+                description: 'Tangy vinegar braises, crispy roasted Lechon, garlic fried rice, and sweet ube desserts.',
+                dishes: [
+                    { name: 'Chicken Adobo', desc: 'Chicken simared slowly in soy sauce, cane vinegar, garlic, bay leaves, and black peppercorns.', tags: ['National Dish'], ingredients: 'Chicken, Soy Sauce, Cane Vinegar, Garlic', img: 'https://images.unsplash.com/photo-1562967914-608f82629710?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Sinigang Soup', desc: 'Sour tamarind broth stewed with pork belly, water spinach, radish, and tomatoes.', tags: ['Comfort Food'], ingredients: 'Pork, Tamarind, Water Spinach, Tomatoes', img: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Sizzling Pork Sisig', desc: 'Crispy chopped pork seasoned with calamansi citrus, chilis, and served on a hot skillet.', tags: ['Spicy'], ingredients: 'Crispy Pork, Calamansi Citrus, Chilis', img: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Halo-Halo Shaved Ice Dessert & Lumpia Spring Rolls'
+            },
+            {
+                id: 'nigeria',
+                name: 'Nigeria',
+                flag: '🇳🇬',
+                capital: 'Abuja',
+                region: 'Africa',
+                color: '#15803d',
+                tags: ['Spicy'],
+                description: 'Smoky Jollof rice, fiery Suya pepper skewers, pounded yam, and rich Egusi soups.',
+                dishes: [
+                    { name: 'Nigerian Jollof Rice', desc: 'Smoky long-grain rice cooked in tomato, red pepper, garlic, and thyme broth.', tags: ['Spicy', 'Iconic'], ingredients: 'Rice, Tomatoes, Scotch Bonnet, Thyme', img: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Suya Skewers', desc: 'Thinly sliced beef marinated in peanut yaji chili spice and grilled over charcoal.', tags: ['Spicy', 'Halal'], ingredients: 'Beef, Kuli-Kuli Peanut Powder, Chilis', img: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Egusi Soup & Pounded Yam', desc: 'Rich soup made from ground melon seeds, spinach, and meat, eaten with smooth pounded yam.', tags: ['Traditional'], ingredients: 'Melon Seeds, Spinach, Palm Oil, Yam', img: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Puff-Puff (Sweet fried dough balls) & Suya'
+            },
+            {
+                id: 'indonesia',
+                name: 'Indonesia',
+                flag: '🇮🇩',
+                capital: 'Jakarta',
+                region: 'Asia',
+                color: '#dc2626',
+                tags: ['Spicy'],
+                description: 'Rich coconut milk Rendang, peanut sauce Satay skewers, and fragrant Nasi Goreng fried rice.',
+                dishes: [
+                    { name: 'Beef Rendang', desc: 'Beef slow-caramelized for hours in coconut milk, lemongrass, galangal, and spices.', tags: ['Halal', 'Spicy'], ingredients: 'Beef, Coconut Milk, Lemongrass, Spices', img: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Nasi Goreng', desc: 'Indonesian fried rice cooked with sweet soy sauce (Kecap Manis), fried egg, and chicken.', tags: ['Popular'], ingredients: 'Rice, Kecap Manis, Egg, Shallots', img: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Chicken Satay with Peanut Sauce', desc: 'Grilled chicken skewers served with warm roasted peanut dipping sauce.', tags: ['Halal'], ingredients: 'Chicken, Peanut Sauce, Lemongrass', img: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'Martabak Manis (Sweet stuffed pancake) & Bakso Soup'
+            },
+            {
+                id: 'usa',
+                name: 'United States',
+                flag: '🇺🇸',
+                capital: 'Washington, D.C.',
+                region: 'Americas',
+                color: '#1e3a8a',
+                tags: [],
+                description: 'Low-and-slow smoked BBQ, gourmet cheeseburgers, Cajun jambalaya, and apple pie.',
+                dishes: [
+                    { name: 'Smoked Texas BBQ Brisket', desc: 'Oak-wood smoked beef brisket with a dark crunchy spice bark and juicy interior.', tags: ['Gluten-Free'], ingredients: 'Beef Brisket, Black Pepper, Wood Smoke', img: 'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Double Smash Cheeseburger', desc: 'Crispy smashed beef patties with melted American cheese, pickles, and special sauce.', tags: ['Popular'], ingredients: 'Beef Patty, Cheese, Brioche Bun, Pickles', img: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=600&q=80' },
+                    { name: 'Southern Fried Chicken', desc: 'Buttermilk marinated chicken double-dredged in seasoned flour and fried crispy.', tags: ['Comfort Food'], ingredients: 'Chicken, Buttermilk, Seasoned Flour', img: 'https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=600&q=80' }
+                ],
+                streetFood: 'New York Style Pizza Slices & Hot Dogs'
+            }
+        ];
+
+        let activeCountries = [...COUNTRY_DATA];
+        let disabledIds = new Set();
+        let currentSelection = null;
+        let isSpinning = false;
+        let soundEnabled = true;
+        let favorites = JSON.parse(localStorage.getItem('roulette_favs') || '[]');
+        let history = JSON.parse(localStorage.getItem('roulette_history') || '[]');
+
+        let audioCtx = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playTickSound() {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(650 + Math.random() * 200, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.04);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.04);
+            } catch (e) { console.error(e); }
+        }
+
+        function playWinSound() {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                const notes = [523.25, 659.25, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.08);
+                    gain.gain.setValueAtTime(0.12, audioCtx.currentTime + idx * 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + idx * 0.08 + 0.3);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(audioCtx.currentTime + idx * 0.08);
+                    osc.stop(audioCtx.currentTime + idx * 0.08 + 0.3);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            icon.className = soundEnabled ? 'fa-solid fa-volume-high text-base text-amber-400' : 'fa-solid fa-volume-xmark text-base text-slate-500';
+        }
+
+        const canvas = document.getElementById('rouletteCanvas');
+        const ctx = canvas.getContext('2d');
+        let startAngle = 0;
+        let spinTimeout = null;
+        let spinAngleStart = 10;
+        let spinTime = 0;
+        let spinTimeTotal = 0;
+
+        function resizeCanvas() {
+            if (!canvas.parentElement) return;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            drawWheel();
+        }
+
+        function drawWheel() {
+            if (!canvas.parentElement) return;
+            const width = canvas.parentElement.clientWidth;
+            const height = canvas.parentElement.clientHeight;
+            const outerRadius = width / 2 - 8;
+            const textRadius = outerRadius - 38;
+            const insideRadius = 45;
+
+            ctx.clearRect(0, 0, width, height);
+
+            if (activeCountries.length === 0) {
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.arc(width/2, height/2, outerRadius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = 'bold 14px "Plus Jakarta Sans"';
+                ctx.textAlign = 'center';
+                ctx.fillText('No Items Selected', width/2, height/2);
+                return;
+            }
+
+            const arc = Math.PI * 2 / activeCountries.length;
+
+            for (let i = 0; i < activeCountries.length; i++) {
+                const angle = startAngle + i * arc;
+                ctx.fillStyle = activeCountries[i].color;
+
+                ctx.beginPath();
+                ctx.arc(width / 2, height / 2, outerRadius, angle, angle + arc, false);
+                ctx.arc(width / 2, height / 2, insideRadius, angle + arc, angle, true);
+                ctx.stroke();
+                ctx.fill();
+
+                ctx.strokeStyle = 'rgba(11, 15, 25, 0.7)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                ctx.save();
+                ctx.fillStyle = "#FFFFFF";
+                ctx.translate(width / 2 + Math.cos(angle + arc / 2) * textRadius, 
+                              height / 2 + Math.sin(angle + arc / 2) * textRadius);
+                ctx.rotate(angle + arc / 2 + Math.PI / 2);
+                
+                // Truncate name if too long for small slices
+                const countryName = activeCountries[i].name.length > 10 ? activeCountries[i].name.substring(0, 8) + '..' : activeCountries[i].name;
+                const text = `${activeCountries[i].flag} ${countryName}`;
+                ctx.font = 'bold 11px "Plus Jakarta Sans"';
+                ctx.textAlign = 'center';
+                ctx.shadowColor = "rgba(0,0,0,0.9)";
+                ctx.shadowBlur = 4;
+                ctx.fillText(text, 0, 0);
+                ctx.restore();
+            }
+        }
+
+        let lastSegmentIndex = -1;
+
+        function spinWheel() {
+            if (isSpinning || activeCountries.length === 0) return;
+            isSpinning = true;
+            
+            spinAngleStart = Math.random() * 10 + 28;
+            spinTime = 0;
+            spinTimeTotal = Math.random() * 3000 + 4000;
+            rotateWheel();
+        }
+
+        function rotateWheel() {
+            spinTime += 20;
+            if (spinTime >= spinTimeTotal) {
+                stopRotateWheel();
+                return;
+            }
+            const spinAngle = spinAngleStart - easeOut(spinTime, 0, spinAngleStart, spinTimeTotal);
+            startAngle += (spinAngle * Math.PI / 180);
+            drawWheel();
+
+            const degrees = startAngle * 180 / Math.PI + 90;
+            const argrad = Math.PI * 2 / activeCountries.length;
+            const index = Math.floor((360 - (degrees % 360)) / (argrad * 180 / Math.PI)) % activeCountries.length;
+            if (index !== lastSegmentIndex && index >= 0) {
+                lastSegmentIndex = index;
+                playTickSound();
+            }
+
+            spinTimeout = requestAnimationFrame(rotateWheel);
+        }
+
+        function stopRotateWheel() {
+            cancelAnimationFrame(spinTimeout);
+            const degrees = startAngle * 180 / Math.PI + 90;
+            const argrad = Math.PI * 2 / activeCountries.length;
+            const index = Math.floor((360 - (degrees % 360)) / (argrad * 180 / Math.PI)) % activeCountries.length;
+            
+            isSpinning = false;
+            const selected = activeCountries[index];
+            displayResult(selected);
+            playWinSound();
+
+            if (typeof confetti === 'function') {
+                confetti({
+                    particleCount: 85,
+                    spread: 75,
+                    origin: { y: 0.6 }
+                });
+            }
+        }
+
+        function easeOut(t, b, c, d) {
+            const ts = (t /= d) * t;
+            const tc = ts * t;
+            return b + c * (tc + -3 * ts + 3 * t);
+        }
+
+        function quickRoll() {
+            if (isSpinning || activeCountries.length === 0) return;
+            const random = activeCountries[Math.floor(Math.random() * activeCountries.length)];
+            displayResult(random);
+            playWinSound();
+        }
+
+        function displayResult(country) {
+            currentSelection = country;
+            
+            document.getElementById('welcomeState').classList.add('hidden');
+            document.getElementById('resultCard').classList.remove('hidden');
+
+            document.getElementById('countryFlag').textContent = country.flag;
+            document.getElementById('countryName').textContent = country.name;
+            document.getElementById('countryMeta').textContent = `${country.region} • Capital: ${country.capital}`;
+            document.getElementById('countryDesc').textContent = `"${country.description}"`;
+            document.getElementById('streetFoodText').textContent = country.streetFood;
+
+            document.getElementById('mapsLink').href = `https://www.google.com/maps/search/${encodeURIComponent(country.name + ' restaurant near me')}`;
+            document.getElementById('recipeSearchLink').href = `https://www.google.com/search?q=${encodeURIComponent('authentic ' + country.name + ' food recipes')}`;
+
+            // Render Dish Cards with Photo Gallery
+            const container = document.getElementById('dishesList');
+            container.innerHTML = '';
+
+            country.dishes.forEach(dish => {
+                const tagBadges = dish.tags.map(t => {
+                    const isGreen = t.includes('Veg') || t.includes('Vegan') || t.includes('Healthy');
+                    const color = isGreen ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+                    return `<span class="px-2 py-0.5 rounded text-[10px] font-bold border ${color}">${t}</span>`;
+                }).join(' ');
+
+                const el = document.createElement('div');
+                el.className = 'glass-card rounded-2xl overflow-hidden flex flex-col justify-between group';
+                el.innerHTML = `
+                    <div>
+                        <!-- Dish Image with Overlay Gradient -->
+                        <div class="relative h-36 w-full overflow-hidden bg-slate-800">
+                            <img src="${dish.img}" alt="${dish.name}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" onerror="this.src='https://placehold.co/600x400/1e293b/f59e0b?text=${encodeURIComponent(dish.name)}'">
+                            <div class="absolute inset-0 img-overlay-grad"></div>
+                            <div class="absolute bottom-2 left-3 right-3 flex justify-between items-end">
+                                <div>
+                                    <h4 class="font-bold text-slate-100 text-sm leading-tight drop-shadow-md">${dish.name}</h4>
+                                    ${dish.localName ? `<span class="text-[10px] text-amber-300 font-medium italic block">${dish.localName}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-3 space-y-2">
+                            <div class="flex flex-wrap gap-1">${tagBadges}</div>
+                            <p class="text-xs text-slate-300 leading-snug">${dish.desc}</p>
+                        </div>
+                    </div>
+                    <div class="px-3 pb-3 pt-1 border-t border-white/5 text-[11px] text-slate-400">
+                        <strong class="text-amber-400">Ingredients:</strong> ${dish.ingredients}
+                    </div>
+                `;
+                container.appendChild(el);
+            });
+
+            updateFavButtonUI();
+            addToHistory(country);
+        }
+
+        function applyFilters() {
+            const region = document.getElementById('regionFilter').value;
+            const diet = document.getElementById('dietFilter').value;
+
+            activeCountries = COUNTRY_DATA.filter(c => {
+                if (disabledIds.has(c.id)) return false;
+                if (region !== 'All' && c.region !== region) return false;
+                if (diet !== 'All' && !c.tags.includes(diet)) return false;
+                return true;
+            });
+
+            document.getElementById('activeCount').textContent = activeCountries.length;
+            drawWheel();
+        }
+
+        function resetFilters() {
+            document.getElementById('regionFilter').value = 'All';
+            document.getElementById('dietFilter').value = 'All';
+            disabledIds.clear();
+            applyFilters();
+            renderCustomizeList();
+        }
+
+        function renderCustomizeList() {
+            const container = document.getElementById('customCountriesList');
+            container.innerHTML = '';
+
+            COUNTRY_DATA.forEach(c => {
+                const isChecked = !disabledIds.has(c.id);
+                const item = document.createElement('label');
+                item.className = 'flex items-center space-x-3 p-2.5 rounded-xl glass-card cursor-pointer hover:bg-white/10';
+                item.innerHTML = `
+                    <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleCountry('${c.id}')" class="rounded border-slate-700 text-amber-500 focus:ring-amber-500">
+                    <span class="text-lg">${c.flag}</span>
+                    <span class="text-xs font-semibold text-slate-200">${c.name}</span>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function toggleCountry(id) {
+            if (disabledIds.has(id)) {
+                disabledIds.delete(id);
+            } else {
+                disabledIds.add(id);
+            }
+            applyFilters();
+        }
+
+        function selectAllCountries(enable) {
+            if (enable) {
+                disabledIds.clear();
+            } else {
+                COUNTRY_DATA.forEach(c => disabledIds.add(c.id));
+            }
+            applyFilters();
+            renderCustomizeList();
+        }
+
+        function toggleFavoriteCurrent() {
+            if (!currentSelection) return;
+            const existsIdx = favorites.findIndex(f => f.id === currentSelection.id);
+            if (existsIdx > -1) {
+                favorites.splice(existsIdx, 1);
+            } else {
+                favorites.push(currentSelection);
+            }
+            localStorage.setItem('roulette_favs', JSON.stringify(favorites));
+            updateFavButtonUI();
+            renderFavoritesList();
+        }
+
+        function updateFavButtonUI() {
+            if (!currentSelection) return;
+            const btn = document.getElementById('favToggleBtn');
+            const isFav = favorites.some(f => f.id === currentSelection.id);
+            btn.innerHTML = isFav ? '<i class="fa-solid fa-star text-amber-400"></i>' : '<i class="fa-regular fa-star"></i>';
+            document.getElementById('favCount').textContent = favorites.length;
+        }
+
+        function renderFavoritesList() {
+            const container = document.getElementById('favListContainer');
+            container.innerHTML = '';
+            document.getElementById('favCount').textContent = favorites.length;
+
+            if (favorites.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">No saved countries yet! Star a country to store it here.</p>';
+                return;
+            }
+
+            favorites.forEach(f => {
+                const el = document.createElement('div');
+                el.className = 'glass-card p-3 rounded-xl flex items-center justify-between';
+                el.innerHTML = `
+                    <div class="flex items-center space-x-3 cursor-pointer" onclick="displayResultFromObj('${f.id}')">
+                        <span class="text-2xl">${f.flag}</span>
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-100">${f.name}</h4>
+                            <p class="text-[10px] text-slate-400">${f.region}</p>
+                        </div>
+                    </div>
+                    <button onclick="removeFav('${f.id}')" class="text-slate-500 hover:text-red-400 p-1"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function removeFav(id) {
+            favorites = favorites.filter(f => f.id !== id);
+            localStorage.setItem('roulette_favs', JSON.stringify(favorites));
+            renderFavoritesList();
+            updateFavButtonUI();
+        }
+
+        function addToHistory(country) {
+            history.unshift({ ...country, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) });
+            if (history.length > 25) history.pop();
+            localStorage.setItem('roulette_history', JSON.stringify(history));
+            renderHistoryList();
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('historyListContainer');
+            container.innerHTML = '';
+
+            if (history.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-6">No spin history yet.</p>';
+                return;
+            }
+
+            history.forEach(h => {
+                const el = document.createElement('div');
+                el.className = 'glass-card p-3 rounded-xl flex items-center justify-between cursor-pointer hover:bg-white/10';
+                el.onclick = () => displayResultFromObj(h.id);
+                el.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span class="text-2xl">${h.flag}</span>
+                        <div>
+                            <h4 class="font-bold text-xs text-slate-100">${h.name}</h4>
+                            <p class="text-[10px] text-amber-400">${h.dishes[0] ? h.dishes[0].name : ''}</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] text-slate-500">${h.time}</span>
+                `;
+                container.appendChild(el);
+            });
+        }
+
+        function clearHistory() {
+            history = [];
+            localStorage.removeItem('roulette_history');
+            renderHistoryList();
+        }
+
+        function displayResultFromObj(id) {
+            const found = COUNTRY_DATA.find(c => c.id === id);
+            if (found) {
+                displayResult(found);
+                closeModal('favoritesModal');
+                closeModal('historyModal');
+            }
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            if (id === 'customizeModal') renderCustomizeList();
+            if (id === 'favoritesModal') renderFavoritesList();
+            if (id === 'historyModal') renderHistoryList();
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        window.onload = function() {
+            applyFilters();
+            resizeCanvas();
+            renderFavoritesList();
+            renderHistoryList();
+            window.addEventListener('resize', resizeCanvas);
+        };
+    </script>
+</body>
+</html>
